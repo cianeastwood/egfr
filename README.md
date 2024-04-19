@@ -88,9 +88,9 @@ python evaluate.py --results_dir results/my_sweep --arg_values pretr_feat=chembe
 
 # 3. Design choices
 The main factors affecting the design choices were:
-- **Dataset size**: The dataset contains 4.6k compounds, which is relatively small. This means that models with many parameters (e.g., neural networks) may overfit, and that (K-fold) cross-validation is essential to get a good estimate of the model's performance. For this reason, we focused on smaller sklearn models, which are easier to cross-validate, and which have fewer parameters to tune.
+- **Dataset size**: The dataset contains 4.6k compounds, which is relatively small. This means that models with many parameters (e.g., neural networks) may overfit and that (K-fold) cross-validation is essential to get a good estimate of the model's performance. For this reason, we focused on smaller sklearn models, which are easier to cross-validate, and which have fewer parameters to tune.
 - **Imbalanced classes**: The dataset is severely imbalanced, with only 10% of compounds being active (pIC50>8). This means that:
-    - _Performace metric:_ Accuracy is not a good metric, and that metrics like balanced accuracy (per class), F2-score, precision, recall, and the area under the ROC curve (AUC) are more informative.
+    - _Performace metric:_ Accuracy is not a good metric, and metrics like balanced accuracy (per class), F2-score, precision, recall, and the area under the ROC curve (AUC) are more informative.
     - _Loss function:_ Standard cross entropy may not be the best loss function, as it may be biased towards the majority class. For this reason, we used "balanced" losses for all models (these re-weight sample losses based on the class imbalance or positive-negative ratio). See the `get_model_and_hparams()` function in `train.py` for more details.
     - _Data splitting:_ The dataset should be stratified when splitting into training and test sets (see our use of `train_test_split()` in `data/loader.py`), and when performing cross-validation (see the `kfold_cross_validate()` function of `train.py`). 
 - **Screening task**: The goal is to screen a library of compounds to find those that are active against the EGFR kinase. We understood this to mean that false negatives were more costly than false positives, i.e., that **recall is more important than precision**, since we want to avoid missing active compounds for subsequent stages of the pipeline. This informed our choice of performance metric, the F2-score, which weights recall twice as much as precision.
@@ -98,7 +98,7 @@ The main factors affecting the design choices were:
 
 ## 3.1 Data preprocessing
 The data is preprocessed in the `data/loader.py` file. The main choices were:
-- **Features to use**: We chose to use fingerprints and pretrained features, both extracted from the SMILES string, and discard additional dataset features like molecular weight, number of hydrogen bond donors/acceptors, etc. This was mainly because we were not familiar with these features, and some initial test indicated that they were not that helpful. However, with more thought and preprocessing, these features may be helpful (section 5.1 below).
+- **Features to use**: We chose to use fingerprints and pretrained features, both extracted from the SMILES string, and discard additional dataset features like molecular weight, number of hydrogen bond donors/acceptors, etc. This was mainly because we were not familiar with these features, and some initial tests indicated that they were not that helpful. However, with more thought and preprocessing, these features may be helpful (section 5.1 below).
 - **Consistent train-test split**: We save the indices of the train-test split to ensure that the same split is used for all models and runs. This is important to ensure that the models are comparable, and that the test set is not used for model selection or hyperparameter tuning.
 - **Save/load features**: We save both fingerprint and pretrained features to disk after preprocessing, to avoid recomputing them for each model. This is particularly important for the pretrained features, which can take a long time to compute (e.g., ChemBERTa).
 
@@ -107,7 +107,7 @@ The data is preprocessed in the `data/loader.py` file. The main choices were:
 As explained above, we chose to use smaller sklearn models, which are easier to cross-validate and have fewer parameters to tune. In particular, we used the following models:
 - **Linear**: A simple linear model, which is easy to interpret and has few parameters to tune. We used the `LogisticRegression` class from sklearn.
 - **Random forest**: A tree-based ensemble model that can capture non-linear relationships in the data, and reduce variance by averaging across models in the ensemble (we fixed `n_estimators=100`). We used the `RandomForestClassifier` class from sklearn.
-- **Gradient-boosted trees**: Another tree-based ensemble model that can capture non-linear relationships and reduce variance.We used the `XGBClassifier` class from the xgboost library, and also fixed `n_estimators=100`.
+- **Gradient-boosted trees**: Another tree-based ensemble model that can capture non-linear relationships and reduce variance. We used the `XGBClassifier` class from the xgboost library, and also fixed `n_estimators=100`.
 
 
 ## 3.3 Performance metrics
@@ -131,7 +131,7 @@ The following table shows the test-set performance for the best-performing model
 | linear  | fcfp       |              |  0.83 |      0.83 |   0.53 |     0.83 |       0.48 |   0.82 |  0.91 | 0.65 | 0.75 |
 | rf      | maccs,fcfp |              |  0.77 |      0.81 |   0.46 |     0.87 |       0.42 |   0.75 |  0.90 | 0.60 | 0.74 |
 
-Surprisingly, the best models do not use pretrained features (ChemBERTa, FCD), perhaps due to the small size of the dataset (making it difficult to properly/robustly use these features). To investigate, we filtered the results to only show those using ChemBERTa features, and found that the linear model with ChemBERTa features actually performs best on the test set, with an F2-score of 0.77, but worse on the (k-fold) validation set. The following tables show the test-set performance for the best-performing models when: a. constrained to use ChemBERTa features; and b. _not_ constrained (as above). Both tables show the average F2-score across the k validation-folds for the training set (`f2_val`), illustrating why the linear model with ChemBERTa features was not selected as the best model (and the danger of fitting to the test set, i.e., selecting models based on test-set performance).
+Surprisingly, the best models do not use pretrained features (ChemBERTa, FCD), perhaps due to the small size of the dataset (making it difficult to properly/robustly use these features). To investigate, we filtered the results to only show those using ChemBERTa features and found that the linear model with ChemBERTa features actually performs best on the test set, with an F2-score of 0.77, but worse on the (k-fold) validation set. The following tables show the test-set performance for the best-performing models when: a. constrained to use ChemBERTa features; and b. _not_ constrained (as above). Both tables show the average F2-score across the k validation-folds for the training set (`f2_val`), illustrating why the linear model with ChemBERTa features was not selected as the best model (and the danger of fitting to the test set, i.e., selecting models based on test-set performance).
 
 **Constrained to use ChemBERTa features:**
 | model   | fingerpr   | pretr_feat   |   acc |   bal_acc |   prec |   recall |   avg_prec |   spec |   auc |   f1 |   f2 |   f2_val |
@@ -151,7 +151,7 @@ Surprisingly, the best models do not use pretrained features (ChemBERTa, FCD), p
 # 5. Possible improvements
 
 ## 5.1 Data
-- **Use more dataset features**: The current models have access to fingerprints (fcfp, ecfp, maccs) and pretrained features (FCD, ChemBERTa). One could also make use of some the original data features, such as molecular weight, number of hydrogen bond donors/acceptors, etc., if they are predictive of the target variable. These may also need to be preprocessesd, e.g., by standardizing continuous features, or converting categorical features to one-hot encodings.
+- **Use more dataset features**: The current models have access to fingerprints (fcfp, ecfp, maccs) and pretrained features (FCD, ChemBERTa). One could also make use of some of the original data features, such as molecular weight, number of hydrogen bond donors/acceptors, etc., if they are predictive of the target variable. These may also need to be preprocessed, e.g., by standardizing continuous features, or converting categorical features to one-hot encodings.
 - **Use different pretrained models**: One could also try other pretrained models like Microsoft's Graphormer. This is provided by the molfeat package, but requires an older version of python so was ignored in this version.
 
 
