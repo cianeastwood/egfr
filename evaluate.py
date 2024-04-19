@@ -2,40 +2,15 @@
 
 import argparse
 import os
-import glob
 from functools import partial
-from io import StringIO
 import pandas as pd
 
 from data.loader import EGFRDataset
 from train import get_model_and_hparams
 from utils import seed_everything, model_performance, plot_roc_curves
+from utils import load_results, filter_df_dict_column
 
 pd.set_option("display.precision", 2)
-
-
-def load_results(results_dir):
-    """ Load results from jsonl files to a pandas dataframe."""
-    records = []
-    for fname in glob.glob(os.path.join(results_dir, "*.jsonl")):
-        with open(fname, "r") as f:
-            if os.path.getsize(fname) != 0:
-                records.append(f.readline().strip())
-
-    df = pd.read_json(StringIO("\n".join(records)), lines=True)
-
-    return df
-
-
-def filter_df_dict_column(row, dict_column_name, filter_dict):
-    """Filter a dataframe based on a dict-type column."""
-    df_dict = dict(row[dict_column_name])
-    for k, v in filter_dict.items():
-        if k not in df_dict:
-            raise ValueError(f"Key '{k}' not in df_dict with keys: {df_dict.keys()}")
-        if df_dict[k] != v:
-            return False
-    return True
 
 
 def main(args):
@@ -121,7 +96,12 @@ def main(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("--data_dir", type=str, default="data/", help="Path to data.")
+    parser.add_argument(
+        "--data_dir", 
+        type=str, 
+        default="data/", 
+        help="Path to data."
+    )
     parser.add_argument(
         "--results_dir",
         type=str,
@@ -129,7 +109,9 @@ if __name__ == "__main__":
         help="Path to sweep results.",
     )
     parser.add_argument(
-        "--plot", action="store_true", help="Generate plots for comparing models."
+        "--plot", 
+        action="store_true", 
+        help="Generate plots for comparing models."
     )
     parser.add_argument(
         "--show_val_score",

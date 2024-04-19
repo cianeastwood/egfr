@@ -21,13 +21,16 @@ from utils import get_scoring_function, seed_everything
 def get_model_and_hparams(args, n_pos=1., n_neg=1.):
     """ Get model and hyperparameters based on args. """
     if args.model_name == "linear":
-        model = LogisticRegression(max_iter=args.max_iter, class_weight="balanced")
+        model = LogisticRegression(max_iter=args.max_iter,
+                                   class_weight="balanced")
         hparams = {
             "C": args.weight_decays,
         }
     elif args.model_name == "rf":
-        model = RandomForestClassifier(n_estimators=args.n_estimators, n_jobs=args.n_workers,
-                                       criterion="entropy", class_weight="balanced")
+        model = RandomForestClassifier(n_estimators=args.n_estimators,
+                                       n_jobs=args.n_workers,
+                                       criterion="entropy",
+                                       class_weight="balanced")
         hparams = {
             "max_depth": args.max_depths,
         }
@@ -39,19 +42,23 @@ def get_model_and_hparams(args, n_pos=1., n_neg=1.):
             tree_method = "auto"
             gpu_id = None
         scale_pos_weight = n_neg / n_pos                # for imbalanced classes
-        model = XGBClassifier(objective="binary:logistic", tree_method=tree_method, gpu_id=gpu_id,
-                              n_estimators=args.n_estimators, n_jobs=args.n_workers,
+        model = XGBClassifier(objective="binary:logistic",
+                              tree_method=tree_method,
+                              gpu_id=gpu_id,
+                              n_estimators=args.n_estimators,
+                              n_jobs=args.n_workers,
                               scale_pos_weight=scale_pos_weight)
         hparams = {
             "max_depth": args.max_depths,
         }
     else:
-        raise ValueError(f"Model {args.model_name} not valid. Choose 'linear', 'rf', 'gbt'.")
+        raise ValueError(f"Model {args.model_name} invalid. Choose 'linear', 'rf', 'gbt'.")
 
     return model, hparams
 
 
-def kfold_cross_validate(fold_model, X_train, y_train, score_fn, n_splits=3, random_state=404):
+def kfold_cross_validate(fold_model, X_train, y_train, score_fn,
+                         n_splits=3, random_state=404):
     """ Perform k-fold cross-validation. """
     kf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=random_state)
 
@@ -71,9 +78,10 @@ def main(args):
 
     # Load and setup data
     dataset = EGFRDataset(data_dir=args.data_dir,
-                          fp_methods=args.fp_methods, 
-                          pretrained_features=args.pretr_feat, 
-                          verbose=args.verbose, test_frac=args.test_frac)
+                          fp_methods=args.fp_methods,
+                          pretrained_features=args.pretr_feat,
+                          verbose=args.verbose,
+                          test_frac=args.test_frac)
     X_train, y_train = dataset.X_train, dataset.y_train
 
     # Calculate class (im)balance
@@ -90,7 +98,8 @@ def main(args):
     hparam_perm_dicts = [dict(zip(hparam_ks, v)) for v in itertools.product(*hparam_vs)]
     best_score = 0.
     best_hparams = {}
-    for hparam_dict in tqdm(hparam_perm_dicts, desc='Cross-validating', disable=args.is_large_sweep):
+    for hparam_dict in tqdm(hparam_perm_dicts, desc='Cross-validating',
+                            disable=args.is_large_sweep):
         model.set_params(**hparam_dict)
         avg_score = kfold_cross_validate(clone(model), X_train, y_train, 
                                          score_fn, n_splits=args.n_splits)
@@ -114,6 +123,7 @@ def main(args):
     with open(os.path.join(save_dir, f"{md5_fname}.jsonl"), 'a') as f:
         f.write(json.dumps(save_dict, sort_keys=True) + "\n")
 
+    # Print results
     if args.verbose:
         print(f"Best hyperparameters: {best_hparams}")
         print(f"Best {args.eval_metric}: {best_score:.3f}")

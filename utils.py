@@ -1,10 +1,14 @@
 """ Utility functions (for molecular featurization and model evaluation). """
 
 from functools import partial
+import glob
+import os
+from io import StringIO
 
 import datamol as dm
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 import torch
 from molfeat.trans.concat import FeatConcat
 from molfeat.trans.pretrained import FCDTransformer, GraphormerTransformer
@@ -27,6 +31,32 @@ def seed_everything(seed=404):
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
 
+def load_results(results_dir):
+    """ Load results from jsonl files to a pandas dataframe."""
+    records = []
+    for fname in glob.glob(os.path.join(results_dir, "*.jsonl")):
+        with open(fname, "r") as f:
+            if os.path.getsize(fname) != 0:
+                records.append(f.readline().strip())
+
+    df = pd.read_json(StringIO("\n".join(records)), lines=True)
+
+    return df
+
+def filter_df_dict_column(row, dict_column_name, filter_dict):
+    """Filter a dataframe based on a dict-type column."""
+    df_dict = dict(row[dict_column_name])
+    for k, v in filter_dict.items():
+        if k not in df_dict:
+            raise ValueError(f"Key '{k}' not in df_dict with keys: {df_dict.keys()}")
+        if df_dict[k] != v:
+            return False
+    return True
+
+# ------------------------------------------------
+# Model performance functions --------------------
+# ------------------------------------------------
+
 def model_performance(y_true, y_pred, y_prob=None, verbose=False):
     """ Compute and report model performance. """
     acc = accuracy_score(y_true, y_pred)
@@ -41,7 +71,7 @@ def model_performance(y_true, y_pred, y_prob=None, verbose=False):
         auc = roc_auc_score(y_true, y_pred)
     f1 = f1_score(y_true, y_pred)
     f2 = fbeta_score(y_true, y_pred, beta=2)
-    
+
     if verbose:
         print(f"Accuracy: {acc:.4f}")
         print(f"Balanced accuracy: {bal_acc:.4f}")
@@ -161,12 +191,12 @@ def smiles_to_pretrained_features(smiles, pretrained_model="fcd", n_jobs=4):
         transformer = FCDTransformer(n_jobs=n_jobs)
         return transformer(smiles)
     elif pretrained_model == "chemberta":
-        transformer = PretrainedHFTransformer(kind='ChemBERTa-77M-MLM', notation='smiles', 
+        transformer = PretrainedHFTransformer(kind='ChemBERTa-77M-MLM', notation='smiles',
                                               dtype=float, n_jobs=n_jobs)
         return transformer(smiles)
     elif pretrained_model == "graphormer":
         transformer = GraphormerTransformer(kind='pcqm4mv2_graphormer_base', dtype=float)
         return transformer(smiles)
     else:
-        raise ValueError(f"Pretrained model {pretrained_model} not recognized." + 
+        raise ValueError(f"Pretrained model {pretrained_model} not recognized." +
                          "Choose from 'fcd', 'chemberta', 'graphormer'.")
