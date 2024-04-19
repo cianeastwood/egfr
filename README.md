@@ -58,12 +58,12 @@ python -m job_scripts.my_sweep
 ```
 
 ### 2.2.2 Run the commands
-Run the commands in the text file using `jobs_scripts/run_local.py`. To do so on a **local** machine (warning: may take 30+ minutes), use:
+Run the commands in the text file using `jobs_scripts/run_local.py`. To do so on a **local machine** (warning: may take 30+ minutes), use:
 ```bash
 python -m job_scripts.run_local --commands_fpath job_scripts/jobs/my_sweep.txt
 ```
 
-To do so via a **slurm cluster**, `job_scripts/submit_jobs.py` provides a useful starting point (edit with the details of your cluster). After installing [submitit](https://github.com/facebookincubator/submitit) via pip, the following command will then run the commands in the text file by submitting them to a slurm cluster:
+**OR**, to do so via a **slurm cluster**, `job_scripts/submit_jobs.py` provides a useful starting point (edit with the details of your cluster). After installing [submitit](https://github.com/facebookincubator/submitit) via pip, the following command will then run the commands in the text file by submitting them to a slurm cluster:
 ```sh
 python -m job_scripts.run_cluster -c job_scripts/jobs/my_sweep.txt
 ```
@@ -80,7 +80,7 @@ The current setup ensures that **the test set is not used for model selection or
 python evaluate.py --results_dir results/my_sweep --arg_values pretr_feat=chemberta
 ```
 
-Or, to additionally filter results to those **using the fcfp fingerprints**, you can run:
+Or, to additionally filter results to those **also using fcfp fingerprints**, you can run:
 ```bash
 python evaluate.py --results_dir results/my_sweep --arg_values pretr_feat=chemberta,fp_methods=fcfp
 ```
@@ -93,7 +93,7 @@ The main factors affecting the design choices were:
     - _Performace metric:_ Accuracy is not a good metric, and that metrics like balanced accuracy (per class), F2-score, precision, recall, and the area under the ROC curve (AUC) are more informative.
     - _Loss function:_ Standard cross entropy may not be the best loss function, as it may be biased towards the majority class. For this reason, we used "balanced" losses for all models (these re-weight sample losses based on the class imbalance or positive-negative ratio). See the `get_model_and_hparams()` function in `train.py` for more details.
     - _Data splitting:_ The dataset should be stratified when splitting into training and test sets (see our use of `train_test_split()` in `data/loader.py`), and when performing cross-validation (see the `kfold_cross_validate()` function of `train.py`). 
-- **Screening task**: The goal is to screen a library of compounds to find those that are active against the EGFR kinase. We understood this to mean that **recall is more important than precision**, as we want to avoid missing active compounds for subsequent stages of the pipeline. This informed our choice of performance metric, the F2-score, which weights recall twice as much as precision.
+- **Screening task**: The goal is to screen a library of compounds to find those that are active against the EGFR kinase. We understood this to mean that false negatives were more costly than false positives, i.e., that **recall is more important than precision**, since we want to avoid missing active compounds for subsequent stages of the pipeline. This informed our choice of performance metric, the F2-score, which weights recall twice as much as precision.
 
 
 ## 3.1 Data preprocessing
