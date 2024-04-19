@@ -1,6 +1,6 @@
 # 0. Overview
 <p align="center">
-  <img src="https://github.com/cianeastwood/valence_rs_hw/blob/main/assets/roc_curve.png?raw=true" width="300" alt="ROC Curve" />
+  <img src="https://github.com/cianeastwood/egfr/blob/main/assets/roc_curve.png?raw=true" width="400" alt="ROC Curve" />
 </p>
 
 ## 0.1 Context
