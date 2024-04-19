@@ -42,7 +42,7 @@ def main(args):
 
         # extract info
         best_hparams = df_m.loc[best_run, "hparams"]
-        m_args = df_m.loc[best_run, "args"]  # argparse.Namespace
+        m_args = df_m.loc[best_run, "args"]
         m_args = argparse.Namespace(**m_args)
 
         # Load dataset with these settings (best features)
