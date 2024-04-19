@@ -98,8 +98,8 @@ if __name__ == "__main__":
 
     parser.add_argument(
         "--data_dir", 
-        type=str, 
-        default="data/", 
+        type=str,
+        default="data/",
         help="Path to data."
     )
     parser.add_argument(
@@ -110,7 +110,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--plot", 
-        action="store_true", 
+        action="store_true",
         help="Generate plots for comparing models."
     )
     parser.add_argument(
